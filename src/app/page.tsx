@@ -1,13 +1,95 @@
 import Image from "next/image";
+import Link from "next/link";
+import { getProducts, type Product } from "@/lib/products";
 
-export default function Home() {
-const products = [
-{ name: "চাল", icon: "🍚" },
-{ name: "ডাল", icon: "🫘" },
-{ name: "আলু", icon: "🥔" },
-{ name: "পেঁয়াজ", icon: "🧅" },
-{ name: "সয়াবিন তেল", icon: "🫒" },
-{ name: "ডিম", icon: "🥚" },
+function ProductCard({ product }: { product: Product }) {
+const isUp = product.change.dir === "up";
+const isDown = product.change.dir === "down";
+
+const unitName =
+product.unit === "kg"
+? "কেজি"
+: product.unit === "litre"
+? "লিটার"
+: product.unit === "dozen"
+? "ডজন"
+: "টি";
+
+const changeColor = isUp
+? "text-red-600"
+: isDown
+? "text-green-700"
+: "text-gray-500";
+
+const changeIcon = isUp ? "↑" : isDown ? "↓" : "−";
+
+return (
+<Link
+href={`/product/${product.id}`}
+className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+> <div className="flex h-20 items-center justify-center rounded-lg bg-green-50 text-4xl">
+{product.image || product.categoryIcon} </div>
+
+```
+  <h3 className="mt-4 font-bold text-gray-800">{product.nameBn}</h3>
+
+  <p className="mt-2 text-xl font-extrabold text-green-800">
+    ৳{product.today.toLocaleString("bn-BD")}
+    <span className="ml-1 text-xs font-normal text-gray-500">
+      / {unitName}
+    </span>
+  </p>
+
+  <p className={`mt-2 text-sm font-semibold ${changeColor}`}>
+    {changeIcon} {Math.abs(product.change.pct).toLocaleString("bn-BD")}%
+    <span className="ml-1 font-normal text-gray-500">
+      গত দিনের তুলনায়
+    </span>
+  </p>
+
+  <p className="mt-2 text-xs text-gray-500">
+    আগের দাম: ৳{product.yesterday.toLocaleString("bn-BD")}
+  </p>
+</Link>
+
+
+);
+}
+
+export default async function Home() {
+let products: Product[] = [];
+let hasError = false;
+
+try {
+products = await getProducts();
+} catch {
+hasError = true;
+}
+
+const risingProducts = products.filter(
+(product) => product.change.dir === "up",
+);
+
+const fallingProducts = products.filter(
+(product) => product.change.dir === "down",
+);
+
+const sections = [
+{
+title: "📈 আজ দাম বেড়েছে",
+description: "যেসব পণ্যের দাম গত দিনের তুলনায় বেড়েছে",
+items: risingProducts,
+},
+{
+title: "📉 আজ দাম কমেছে",
+description: "যেসব পণ্যের দাম গত দিনের তুলনায় কমেছে",
+items: fallingProducts,
+},
+{
+title: "🛒 সব পণ্য",
+description: "প্রয়োজনীয় পণ্যের সর্বশেষ বাজারদর",
+items: products,
+},
 ];
 
 return ( <main className="flex-1 bg-[#f8f7f2]"> <section className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-12 sm:px-6 md:grid-cols-2 md:py-20 lg:px-8"> <div> <p className="font-semibold text-green-700">
@@ -21,7 +103,7 @@ return ( <main className="flex-1 bg-[#f8f7f2]"> <section className="mx-auto grid
       </h1>
 
       <p className="mt-4 leading-7 text-gray-600">
-        আপনার প্রয়োজনীয় পণ্যের বাজারদর জানুন এবং সচেতনভাবে বাজার করুন।
+        আপনার প্রয়োজনীয় পণ্যের বাজারদর জানুন এবং সচেতনভাবে বাজার করুন।
       </p>
 
       <a
@@ -42,95 +124,37 @@ return ( <main className="flex-1 bg-[#f8f7f2]"> <section className="mx-auto grid
     />
   </section>
 
-  <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-    <h2 className="text-2xl font-bold text-gray-900">
-      📈 আজ দাম বেড়েছে
-    </h2>
-
-    <p className="mt-2 text-gray-600">
-      বাজারে দাম বেড়েছে এমন পণ্য
-    </p>
-
-    <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-      {products.map((product) => (
-        <article
-          key={product.name}
-          className="rounded-xl bg-white p-5 shadow-sm"
-        >
-          <div className="flex h-20 items-center justify-center rounded-lg bg-green-50 text-4xl">
-            {product.icon}
-          </div>
-          <h3 className="mt-4 font-bold text-gray-800">
-            {product.name}
-          </h3>
-          <p className="mt-2 text-sm text-gray-500">
-            বাজারদর শীঘ্রই দেখানো হবে
-          </p>
-        </article>
-      ))}
+  {hasError ? (
+    <div className="mx-auto max-w-7xl px-4 py-12 text-center text-red-600">
+      পণ্যের তথ্য লোড করা যায়নি। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।
     </div>
-  </section>
+  ) : (
+    sections.map((section, index) => (
+      <section
+        key={section.title}
+        id={index === 2 ? "সব-পণ্য" : undefined}
+        className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8"
+      >
+        <h2 className="text-2xl font-bold text-gray-900">
+          {section.title}
+        </h2>
 
-  <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-    <h2 className="text-2xl font-bold text-gray-900">
-      📉 আজ দাম কমেছে
-    </h2>
+        <p className="mt-2 text-gray-600">{section.description}</p>
 
-    <p className="mt-2 text-gray-600">
-      বাজারে দাম কমেছে এমন পণ্য
-    </p>
-
-    <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-      {products.map((product) => (
-        <article
-          key={product.name}
-          className="rounded-xl bg-white p-5 shadow-sm"
-        >
-          <div className="flex h-20 items-center justify-center rounded-lg bg-green-50 text-4xl">
-            {product.icon}
-          </div>
-          <h3 className="mt-4 font-bold text-gray-800">
-            {product.name}
-          </h3>
-          <p className="mt-2 text-sm text-gray-500">
-            বাজারদর শীঘ্রই দেখানো হবে
+        {section.items.length === 0 ? (
+          <p className="mt-6 rounded-xl bg-white p-6 text-gray-500">
+            এই মুহূর্তে কোনো পণ্যের তথ্য পাওয়া যায়নি।
           </p>
-        </article>
-      ))}
-    </div>
-  </section>
-
-  <section
-    id="সব-পণ্য"
-    className="mx-auto max-w-7xl px-4 py-10 pb-20 sm:px-6 lg:px-8"
-  >
-    <h2 className="text-2xl font-bold text-gray-900">
-      🛒 সব পণ্য
-    </h2>
-
-    <p className="mt-2 text-gray-600">
-      প্রয়োজনীয় পণ্যের তালিকা এক জায়গায় দেখুন।
-    </p>
-
-    <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-      {products.map((product) => (
-        <article
-          key={product.name}
-          className="rounded-xl bg-white p-5 shadow-sm"
-        >
-          <div className="flex h-20 items-center justify-center rounded-lg bg-green-50 text-4xl">
-            {product.icon}
+        ) : (
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+            {section.items.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
           </div>
-          <h3 className="mt-4 font-bold text-gray-800">
-            {product.name}
-          </h3>
-          <p className="mt-2 text-sm text-gray-500">
-            বাজারদর শীঘ্রই দেখানো হবে
-          </p>
-        </article>
-      ))}
-    </div>
-  </section>
+        )}
+      </section>
+    ))
+  )}
 </main>
 
 
