@@ -23,8 +23,7 @@ export interface Product {
   }[];
 }
 
-const API_URL = "https://api.api-store.workers.dev/api/bazardor";
-
+const API_URL = "https://api.abcz.workers.dev/api/bazardor";
 export async function getProducts(): Promise<Product[]> {
   const response = await fetch(`${API_URL}/products`, {
     next: { revalidate: 3600 },
