@@ -64,9 +64,10 @@ let products: Product[] = [];
 let hasError = false;
 
 try {
-products = await getProducts();
-} catch {
-hasError = true;
+  products = await getProducts();
+} catch (error) {
+  console.error("BazarDor API Error:", error);
+  hasError = true;
 }
 
 const risingProducts = products.filter(
